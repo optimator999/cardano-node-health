@@ -1,0 +1,56 @@
+Description:  This template the external health checks to verify connectivity to your relay nodes
+
+Parameters:
+  Address:
+    Type: String
+    # Change the following for the fully qualified domain names of your relay hosts
+    Description: The fully qulified domain name for your relay node
+  Port:
+    Type: String
+    Description: The post number to check on your relay node
+  PhoneNumber:
+    Type: String
+    Description: Pass your phone number as a parameter in the formation +{countrycode}{number}
+  
+Resources:
+  RelayHealthCheck:
+    Type: AWS::Route53::HealthCheck
+    Properties: 
+      HealthCheckConfig: 
+        #IPAddress: 192.0.2.44
+        Port: !Ref Port
+        Type: TCP
+        #ResourcePath: '/example/index.html'
+        FullyQualifiedDomainName: !Ref Address
+        RequestInterval: 30
+        FailureThreshold: 3
+      HealthCheckTags: 
+        - Key: Name
+          Value: !Sub "${Address} External"
+  SMSNotification:
+    Type: AWS::SNS::Topic
+    Properties: 
+      Subscription: 
+        # Change the following to your phone number
+        - Endpoint: !Ref PhoneNumber
+          Protocol: sms
+      TopicName: Cardano-External-SNS
+  CanaryTopologyAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${Address} Alarm"
+      AlarmDescription: !Sub "External health check for Cardano Node on port ${Port}"
+      AlarmActions:
+        - !Ref SMSNotification
+      Namespace: AWS/Route53
+      MetricName: HealthCheckStatus
+      Dimensions:
+        - Name: HealthCheckId
+          Value: !Ref RelayHealthCheck
+      Statistic: Minimum
+      ComparisonOperator: LessThanThreshold
+      Threshold: 1
+      Period: 60 
+      DatapointsToAlarm: 1 
+      EvaluationPeriods: 1
+      TreatMissingData: missing 

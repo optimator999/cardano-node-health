@@ -1,0 +1,194 @@
+Description:  This template the creates an AWS canary to monitor the cardano topolofy file for includion of your relay nodes.
+
+Parameters:
+  RelayNodes:
+    Type: String
+    # Change the following for the fully qualified domain names of your relay hosts
+    Default: relay1.qubitpool.com,relay2.qubitpool.com
+    Description: A comma separated list of URLs or IPs to check
+  PhoneNumber:
+    Type: String
+    Description: Pass your phone number as a parameter in the formation +{countrycode}{number}
+  S3Bucket:
+    Type: String
+    Default: cardano-canary-topology
+    Description: The name of the S3 bucket
+  
+
+Resources:
+  
+  CanaryBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: Name
+          Value: Canary Lab
+
+  SMSNotification:
+    Type: AWS::SNS::Topic
+    Properties: 
+      Subscription: 
+        # Change the following to your phone number
+        - Endpoint: !Ref PhoneNumber
+          Protocol: sms
+      TopicName: Cardano-Canary-SNS
+
+  
+  CanaryRole:
+    Type: AWS::IAM::Role
+    Properties: 
+      RoleName: cardano_canary_role
+      AssumeRolePolicyDocument: 
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: 
+              Service:
+                - lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: cardano-canary-policy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow   
+                Action:
+                  - s3:PutObject
+                  - s3:GetBucketLocation
+                  - s3:ListAllMyBuckets
+                  - xray:PutTraceSegments
+                  - cloudwatch:PutMetricData
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents 
+                Resource: "*" 
+    
+  CanaryTopologyAlarm:
+    Type: AWS::CloudWatch::Alarm
+    DependsOn:
+      - SyntheticsCanary
+    Properties:
+      AlarmName: CanaryTopologyAlarm
+      AlarmDescription: The CloudWatch Synthetics Canary that monitors Topology
+      AlarmActions:
+        - !Ref SMSNotification
+      Namespace: CloudWatchSynthetics
+      MetricName: SuccessPercent
+      Dimensions:
+        - Name: CanaryName
+          Value: !Ref SyntheticsCanary
+      Statistic: Average
+      ComparisonOperator: LessThanOrEqualToThreshold
+      Threshold: 100
+      # evaluate over 1 hour
+      # We're creating a M out of N alarm 
+      # The canary will run every hour so this alarm looks at 
+      # an evaluation periond of 1 hour and requires 3 consecutive 
+      # errors to alarm
+      Period: 3600 
+      DatapointsToAlarm: 3 
+      EvaluationPeriods: 3
+      TreatMissingData: breaching # Catch if the canary is not running
+
+
+  SyntheticsCanary:
+    Type: AWS::Synthetics::Canary
+    Properties:
+      Name: cardano-topology
+      ExecutionRoleArn: !GetAtt CanaryRole.Arn 
+      ArtifactS3Location: !Sub "s3://${CanaryBucket}" 
+      RuntimeVersion: syn-nodejs-puppeteer-3.1
+      Schedule:
+        Expression: rate(1 hour)
+        #Expression: rate(60 minutes)
+      RunConfig: 
+        TimeoutInSeconds: 60
+        EnvironmentVariables:
+          TARGET: !Ref RelayNodes
+      FailureRetentionPeriod: 15
+      SuccessRetentionPeriod: 15
+      StartCanaryAfterCreation: false
+      Code:
+        Handler: index.handler
+        Script: |
+            var synthetics = require('Synthetics');
+            const log = require('SyntheticsLogger');
+
+            const apiCanary = async function () {
+                
+                // Handle validation for positive scenario
+                const validateSuccessful = async function(res) {
+                    return new Promise((resolve, reject) => {
+                        if (res.statusCode < 200 || res.statusCode > 299) {
+                            throw res.statusCode + ' ' + res.statusMessage;
+                        }
+                 
+                        let responseBody = '';
+                        res.on('data', (d) => {
+                            responseBody += d;
+                        });
+                 
+                        res.on('end', () => {
+                            console.log(responseBody)
+                            // Add validation on 'responseBody' here if required.
+                            let errors = ""
+                            if (process.env.TARGET == undefined) reject('Please add TARGET as an environmental variable with a comma separated list of domain names or IPs to check');
+                            let targets = process.env.TARGET.split(",")
+                            targets.forEach(target => {
+                                if (! responseBody.toString().match(target)) {
+                                    errors += "Missing " + target + ". ";
+                                }
+                            }) 
+                            if (errors == "") resolve("Success - " + targets.toString() + " Found in topology");
+                            else reject(errors);
+                        });
+                    });
+                };
+                
+
+                // Set request option for Verify explorer.mainnet.cardano.org/relays/topology.json
+                let requestOptionsStep1 = {
+                    hostname: 'explorer.mainnet.cardano.org',
+                    method: 'GET',
+                    path: '/relays/topology.json',
+                    port: '443',
+                    protocol: 'https:',
+                    body: "",
+                    headers: {}
+                };
+                requestOptionsStep1['headers']['User-Agent'] = [synthetics.getCanaryUserAgentString(), requestOptionsStep1['headers']['User-Agent']].join(' ');
+
+                // Set step config option for Verify explorer.mainnet.cardano.org/relays/topology.json
+               let stepConfig1 = {
+                    includeRequestHeaders: false,
+                    includeResponseHeaders: false,
+                    includeRequestBody: false,
+                    includeResponseBody: false,
+                    restrictedHeaders: [],
+                    continueOnHttpStepFailure: true
+                };
+
+                await synthetics.executeHttpStep('Verify explorer.mainnet.cardano.org/relays/topology.json', requestOptionsStep1, validateSuccessful, stepConfig1);
+
+                
+            };
+
+            exports.handler = async () => {
+                return await apiCanary();
+            };
+          
+
+Outputs:
+  CanaryBucket:
+    Description: The S3 Bucket created to store artifacts
+    Value: !Ref CanaryBucket
+
+  Canary:
+    Description: The Cardano Topology CanaryName
+    Value: !Ref SyntheticsCanary
+
