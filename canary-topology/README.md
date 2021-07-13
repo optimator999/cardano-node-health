@@ -19,7 +19,7 @@ We’ll use a CloudFormation template to create the canary, the alarm, and the S
 **Step 4**: Clone the cardano-canary-topology repo
 
 
-```git clone XXX
+```git clone https://github.com/optimator999/cardano-node-health.git
 cd cardano-node-health/canary-topology
 ```
 
@@ -31,7 +31,9 @@ Next, you need to specify the Fully Qualified Domain Name for your relay hosts. 
 
 Run the CloudFormation Command
 
+**NOTE**: Once started, the canary will alarm. It will take 3 hours for the carnary to get enough data points to turn off the alarm.
+
 ```
-aws cloudformation create-stack --stack-name cardano-canary-topology --template-body file://cardano-canary-topology.yaml --parameters ParameterKey=PhoneNumber,ParameterValue=+15555551212 ParameterKey=RelayNodes,ParameterValue=relay1.example.com\\,relay2.example.com
+aws cloudformation create-stack  --capabilities CAPABILITY_NAMED_IAM --stack-name cardano-canary-topology --template-body file://cardano-canary-topology.yaml --parameters ParameterKey=PhoneNumber,ParameterValue=+15555551212 ParameterKey=RelayNodes,ParameterValue=relay1.example.com\\,relay2.example.com
 ```
 

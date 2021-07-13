@@ -3,16 +3,10 @@ Description:  This template the creates an AWS canary to monitor the cardano top
 Parameters:
   RelayNodes:
     Type: String
-    # Change the following for the fully qualified domain names of your relay hosts
-    Default: relay1.qubitpool.com,relay2.qubitpool.com
     Description: A comma separated list of URLs or IPs to check
   PhoneNumber:
     Type: String
     Description: Pass your phone number as a parameter in the formation +{countrycode}{number}
-  S3Bucket:
-    Type: String
-    Default: cardano-canary-topology
-    Description: The name of the S3 bucket
   
 
 Resources:
@@ -27,7 +21,7 @@ Resources:
         RestrictPublicBuckets: true
       Tags:
         - Key: Name
-          Value: Canary Lab
+          Value: Cardano Canary 
 
   SMSNotification:
     Type: AWS::SNS::Topic
@@ -36,13 +30,13 @@ Resources:
         # Change the following to your phone number
         - Endpoint: !Ref PhoneNumber
           Protocol: sms
-      TopicName: Cardano-Canary-SNS
+      TopicName: Cardano-Canary-SNS123
 
   
   CanaryRole:
     Type: AWS::IAM::Role
     Properties: 
-      RoleName: cardano_canary_role
+      RoleName: cardano_canary_role123
       AssumeRolePolicyDocument: 
         Version: '2012-10-17'
         Statement:
@@ -52,7 +46,7 @@ Resources:
                 - lambda.amazonaws.com
             Action: sts:AssumeRole
       Policies:
-        - PolicyName: cardano-canary-policy
+        - PolicyName: cardano-canary-policy123
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -73,7 +67,7 @@ Resources:
     DependsOn:
       - SyntheticsCanary
     Properties:
-      AlarmName: CanaryTopologyAlarm
+      AlarmName: CanaryTopologyAlarm123
       AlarmDescription: The CloudWatch Synthetics Canary that monitors Topology
       AlarmActions:
         - !Ref SMSNotification
@@ -99,7 +93,7 @@ Resources:
   SyntheticsCanary:
     Type: AWS::Synthetics::Canary
     Properties:
-      Name: cardano-topology
+      Name: cardano-topology123
       ExecutionRoleArn: !GetAtt CanaryRole.Arn 
       ArtifactS3Location: !Sub "s3://${CanaryBucket}" 
       RuntimeVersion: syn-nodejs-puppeteer-3.1
@@ -112,7 +106,7 @@ Resources:
           TARGET: !Ref RelayNodes
       FailureRetentionPeriod: 15
       SuccessRetentionPeriod: 15
-      StartCanaryAfterCreation: false
+      StartCanaryAfterCreation: true
       Code:
         Handler: index.handler
         Script: |
