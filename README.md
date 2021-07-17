@@ -4,7 +4,7 @@ These are AWS Tools to monitory the health of Cardano Nodes. Check out the sub f
 
 ## Canary Topology
 
-This creates an AWS Canary to momitory the topology.json file to ensure your nodes are present. It also creates an alarm and SMS endpoint that will notify you via text if there is an issue.
+This creates an AWS Canary to monitor the topology.json file to ensure your nodes are present. It also creates an alarm and SMS endpoint that will notify you via text if there is an issue.
 
 ## External Health
 

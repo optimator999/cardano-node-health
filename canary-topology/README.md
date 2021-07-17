@@ -1,4 +1,4 @@
-#Cardano Topology Canary
+# Cardano Topology Canary
 
 Currently, the Cardano network relies on manual peer discovery. To achieve this discovery it is important that you register your nodes using `topologyUpdater.sh`. Once your nodes are registered they will be in the topology master file and available for peer discovery. 
 
@@ -19,7 +19,8 @@ We’ll use a CloudFormation template to create the canary, the alarm, and the S
 **Step 4**: Clone the cardano-canary-topology repo
 
 
-```git clone https://github.com/optimator999/cardano-node-health.git
+```bash
+git clone https://github.com/optimator999/cardano-node-health.git
 cd cardano-node-health/canary-topology
 ```
 

@@ -1,6 +1,6 @@
 # Cardano Node External Health Check
 
-This creates an external AWS health check on your cardano nodes. It's a simple tcp request to the specified node and port. This isn't as sophisticated as `cncli ping`, which checks for the correct node response. But, the AWS health check is conducted automatically from a geographically dispersed location. Our assumption is that if we can access the port via tcp, we'll rely on internal `cncli ping` requests to ensure node functionality.
+This creates an external AWS health check on your cardano nodes. It's a simple tcp request to the specified node and port. This isn't as sophisticated as `cncli ping`, which checks for the correct node response. But, the AWS health check is conducted automatically from a geographically dispersed locations. Our assumption is that if we can access the port via tcp, we'll rely on internal `cncli ping` requests to ensure node functionality.
 
 We’ll use a CloudFormation template to create the health check, the alarm, and the SMS notification.
 
@@ -13,7 +13,8 @@ We’ll use a CloudFormation template to create the health check, the alarm, and
 **Step 4**: Clone the cardano-canary-topology repo
 
 
-```git clone https://github.com/optimator999/cardano-node-health.git
+```bash
+git clone https://github.com/optimator999/cardano-node-health.git
 cd cardano-node-health/external-health
 ```
 
