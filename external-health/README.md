@@ -13,7 +13,7 @@ We’ll use a CloudFormation template to create the health check, the alarm, and
 **Step 4**: Clone the cardano-canary-topology repo
 
 
-```git clone XXX
+```git clone https://github.com/optimator999/cardano-node-health.git
 cd cardano-node-health/external-health
 ```
 

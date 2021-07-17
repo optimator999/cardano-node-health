@@ -30,13 +30,13 @@ Resources:
         # Change the following to your phone number
         - Endpoint: !Ref PhoneNumber
           Protocol: sms
-      TopicName: Cardano-Canary-SNS123
+      TopicName: Cardano-Canary-SNS
 
   
   CanaryRole:
     Type: AWS::IAM::Role
     Properties: 
-      RoleName: cardano_canary_role123
+      RoleName: cardano_canary_role
       AssumeRolePolicyDocument: 
         Version: '2012-10-17'
         Statement:
@@ -46,7 +46,7 @@ Resources:
                 - lambda.amazonaws.com
             Action: sts:AssumeRole
       Policies:
-        - PolicyName: cardano-canary-policy123
+        - PolicyName: cardano-canary-policy
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -67,7 +67,7 @@ Resources:
     DependsOn:
       - SyntheticsCanary
     Properties:
-      AlarmName: CanaryTopologyAlarm123
+      AlarmName: CanaryTopologyAlarm
       AlarmDescription: The CloudWatch Synthetics Canary that monitors Topology
       AlarmActions:
         - !Ref SMSNotification
@@ -77,7 +77,7 @@ Resources:
         - Name: CanaryName
           Value: !Ref SyntheticsCanary
       Statistic: Average
-      ComparisonOperator: LessThanOrEqualToThreshold
+      ComparisonOperator: LessThanThreshold
       Threshold: 100
       # evaluate over 1 hour
       # We're creating a M out of N alarm 
@@ -93,7 +93,7 @@ Resources:
   SyntheticsCanary:
     Type: AWS::Synthetics::Canary
     Properties:
-      Name: cardano-topology123
+      Name: cardano-topology
       ExecutionRoleArn: !GetAtt CanaryRole.Arn 
       ArtifactS3Location: !Sub "s3://${CanaryBucket}" 
       RuntimeVersion: syn-nodejs-puppeteer-3.1
